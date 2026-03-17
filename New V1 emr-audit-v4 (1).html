@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EMR Audit Tool — Moxie</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f9fb;color:#1a1a2e;min-height:100vh;}
+.topbar{background:#fff;border-bottom:1px solid #e5e7eb;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:100;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+.topbar-title h1{font-size:18px;font-weight:800;color:#111827;}
+.topbar-title p{font-size:12px;color:#9ca3af;}
+.badges{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid;}
+.badge-green{background:#dcfce7;border-color:#86efac;color:#166534;}
+.badge-yellow{background:#fef9c3;border-color:#fde047;color:#854d0e;}
+.badge-red{background:#fee2e2;border-color:#fca5a5;color:#991b1b;}
+.badge-orange{background:#ffedd5;border-color:#fdba74;color:#9a3412;}
+.badge-purple{background:#ede9fe;border-color:#c4b5fd;color:#5b21b6;}
+.badge-indigo{background:#e0e7ff;border-color:#a5b4fc;color:#3730a3;}
+.badge-gray{background:#f3f4f6;border-color:#d1d5db;color:#374151;}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;}
+.dot-green{background:#22c55e;}.dot-yellow{background:#eab308;}.dot-red{background:#ef4444;}.dot-orange{background:#f97316;}.dot-purple{background:#a855f7;}
+.progress-bar{background:#fff;border-bottom:1px solid #f3f4f6;padding:10px 24px;}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.step-btn{display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;border:none;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;}
+.step-active{background:#4f46e5;color:#fff;}
+.step-done{background:#e0e7ff;color:#3730a3;cursor:pointer;}
+.step-future{background:#f3f4f6;color:#9ca3af;cursor:not-allowed;}
+.pbar{height:4px;background:#f3f4f6;border-radius:2px;}
+.pbar-fill{height:4px;background:#4f46e5;border-radius:2px;transition:width .4s;}
+.main{max-width:760px;margin:0 auto;padding:28px 24px;display:flex;flex-direction:column;gap:20px;}
+.card{background:#fff;border-radius:14px;border:1px solid #e5e7eb;padding:20px;}
+.card-red{border-color:#fca5a5;}
+.card-yellow{border-color:#fde047;}
+.card-purple{border:2px solid #a5b4fc;}
+.section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin-bottom:14px;}
+h2.page-title{font-size:18px;font-weight:800;color:#111827;}
+p.page-sub{font-size:13px;color:#6b7280;margin-top:4px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+label.field-label{display:block;font-size:11px;font-weight:600;color:#6b7280;margin-bottom:4px;}
+input[type=text],input[type=date],input[type=number],textarea{width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit;outline:none;transition:border-color .2s;}
+input:focus,textarea:focus{border-color:#818cf8;}
+textarea{resize:none;}
+.emr-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.emr-btn{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;cursor:pointer;font-size:13px;font-weight:600;text-align:left;transition:all .2s;width:100%;}
+.emr-btn:hover{border-color:#a5b4fc;}
+.emr-btn.sel-green{background:#f0fdf4;border-color:#86efac;color:#166534;outline:2px solid #818cf8;outline-offset:2px;}
+.emr-btn.sel-yellow{background:#fef9c3;border-color:#fde047;color:#854d0e;outline:2px solid #818cf8;outline-offset:2px;}
+.emr-btn.sel-red{background:#fee2e2;border-color:#fca5a5;color:#991b1b;outline:2px solid #818cf8;outline-offset:2px;}
+.emr-btn.sel-orange{background:#ffedd5;border-color:#fdba74;color:#9a3412;outline:2px solid #818cf8;outline-offset:2px;}
+.emr-btn.sel-purple{background:#ede9fe;border-color:#c4b5fd;color:#5b21b6;outline:2px solid #818cf8;outline-offset:2px;}
+.emr-btn.sel-gray{background:#f3f4f6;border-color:#9ca3af;outline:2px solid #818cf8;outline-offset:2px;}
+.emr-risk{margin-left:auto;font-size:11px;opacity:.45;font-weight:500;}
+.tier-btns{display:flex;gap:10px;}
+.tier-btn{flex:1;padding:10px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;cursor:pointer;font-size:13px;font-weight:700;transition:all .2s;}
+.tier-btn.active{background:#4f46e5;color:#fff;border-color:#4f46e5;}
+.btn-row{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.btn-row.end{justify-content:flex-end;}
+button.btn-primary{padding:10px 22px;background:#4f46e5;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;transition:background .2s;}
+button.btn-primary:hover{background:#4338ca;}
+button.btn-primary:disabled{opacity:.4;cursor:not-allowed;}
+button.btn-back{padding:10px 18px;background:#fff;color:#6b7280;border:1px solid #e5e7eb;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;}
+button.btn-back:hover{background:#f9fafb;}
+
+/* Must-haves */
+.must-have-table{width:100%;border-collapse:collapse;}
+.must-have-table th{font-size:11px;font-weight:700;text-transform:uppercase;color:#6b7280;text-align:left;padding:8px 14px;background:#f9fafb;border-bottom:1px solid #f3f4f6;}
+.must-have-table td{padding:10px 14px;border-bottom:1px solid #f9fafb;font-size:13px;}
+.must-have-table tr.ck-row{background:#eef2ff;}
+.priority-btns{display:flex;gap:4px;}
+.priority-btn{padding:3px 8px;border-radius:6px;border:1px solid #e5e7eb;background:#fff;font-size:11px;font-weight:600;cursor:pointer;}
+.priority-btn.ac{background:#dc2626;color:#fff;border-color:#dc2626;}
+.priority-btn.ai{background:#eab308;color:#fff;border-color:#eab308;}
+.priority-btn.an{background:#22c55e;color:#fff;border-color:#22c55e;}
+.can-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;}
+.can-yes{background:#dcfce7;color:#166534;}
+.can-no{background:#fee2e2;color:#991b1b;}
+.can-manual{background:#fef9c3;color:#854d0e;}
+.gap-alert{background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:14px 16px;}
+.gap-item{font-size:13px;color:#dc2626;font-weight:600;display:flex;align-items:center;gap:6px;padding:2px 0;}
+.caps-list{display:flex;flex-wrap:wrap;gap:8px;}
+.cap-badge{padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700;}
+.cap-Clients{background:#dcfce7;color:#166534;}
+.cap-Appts{background:#dbeafe;color:#1e40af;}
+.cap-Photos{background:#ede9fe;color:#5b21b6;}
+.cap-Charts{background:#fce7f3;color:#9d174d;}
+.cap-Files{background:#fef9c3;color:#854d0e;}
+.cap-Other{background:#ffedd5;color:#9a3412;}
+.nuances-list li,.cannot-list li{font-size:13px;color:#374151;padding:3px 0;display:flex;gap:8px;}
+.special-check{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;border:1px solid #e5e7eb;cursor:pointer;transition:all .2s;}
+.special-check.checked{background:#eef2ff;border-color:#a5b4fc;}
+.special-check span.pts{margin-left:auto;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#f3f4f6;color:#6b7280;}
+.special-check.checked span.pts{background:#e0e7ff;color:#3730a3;}
+.practice-btns,.tier-score-btns,.cx-btns{display:flex;gap:6px;}
+.sm-btn{flex:1;padding:8px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;cursor:pointer;font-size:12px;font-weight:700;transition:all .2s;line-height:1.3;}
+.sm-btn.active{background:#4f46e5;color:#fff;border-color:#4f46e5;}
+.sm-btn .sub{font-size:10px;opacity:.7;display:block;}
+.tier-score-btns{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+
+/* Enterprise checklist */
+.ent-section{background:#fff;border-radius:14px;border:1px solid #e5e7eb;padding:18px;display:flex;flex-direction:column;gap:10px;}
+.ent-section.critical{border-color:#fca5a5;}
+.ent-section.high{border-color:#fde047;}
+.ent-section-header{display:flex;align-items:center;gap:8px;}
+.ent-section-title{font-weight:800;font-size:14px;flex:1;}
+.ent-section-count{font-size:11px;color:#9ca3af;}
+.ent-items{display:flex;flex-direction:column;gap:6px;}
+.ent-item{border-radius:10px;border:1px solid #e5e7eb;background:#f9fafb;overflow:hidden;transition:border-color .2s;}
+.ent-item.checked{background:#f0fdf4;border-color:#86efac;}
+.ent-item-top{display:flex;align-items:flex-start;gap:10px;padding:10px 12px 6px;}
+.ent-item-top input[type=checkbox]{width:16px;height:16px;margin-top:2px;flex-shrink:0;accent-color:#4f46e5;cursor:pointer;}
+.ent-item-label{font-size:13px;font-weight:600;flex:1;line-height:1.4;}
+.ent-item.checked .ent-item-label{color:#166534;}
+.pills{padding:4px 12px 6px 38px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.pill{padding:4px 10px;border-radius:999px;border:1px solid #d1d5db;background:#fff;font-size:11px;font-weight:600;color:#374151;cursor:pointer;transition:all .15s;}
+.pill:hover{border-color:#818cf8;}
+.pill.selected{background:#4f46e5;color:#fff;border-color:#4f46e5;}
+.multi-label{font-size:11px;color:#9ca3af;font-style:italic;}
+.ent-note-wrap{padding:4px 12px 10px 38px;}
+.ent-note{width:100%;border:1px solid #e5e7eb;border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;background:#fff;outline:none;}
+.risk-table{width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;}
+.risk-table th{background:#f9fafb;font-size:11px;font-weight:700;text-transform:uppercase;color:#6b7280;padding:8px 12px;text-align:left;border-bottom:1px solid #f3f4f6;}
+.risk-table td{padding:8px 12px;border-bottom:1px solid #f9fafb;font-size:13px;}
+.risk-btns{display:flex;gap:4px;}
+.risk-btn{padding:3px 8px;border-radius:6px;border:1px solid #e5e7eb;background:#fff;font-size:11px;font-weight:700;cursor:pointer;}
+.risk-btn.Low{background:#16a34a;color:#fff;border-color:#16a34a;}
+.risk-btn.Med{background:#eab308;color:#fff;border-color:#eab308;}
+.risk-btn.High{background:#dc2626;color:#fff;border-color:#dc2626;}
+.progress-mini{display:flex;flex-direction:column;gap:4px;text-align:right;}
+.progress-mini .big-num{font-size:28px;font-weight:900;color:#4f46e5;line-height:1;}
+.mini-bar{height:5px;background:#e5e7eb;border-radius:3px;width:80px;margin-left:auto;}
+.mini-fill{height:5px;background:#4f46e5;border-radius:3px;}
+
+/* Score */
+.score-ring-wrap{display:flex;justify-content:center;padding:10px 0;}
+.score-ring{position:relative;width:160px;height:160px;}
+.score-ring svg{transform:rotate(-90deg);}
+.score-ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.score-num{font-size:42px;font-weight:900;line-height:1;}
+.score-denom{font-size:14px;color:#9ca3af;font-weight:600;}
+.score-lbl{font-size:13px;font-weight:700;margin-top:2px;}
+.score-low{color:#16a34a;} .score-medium{color:#ca8a04;} .score-high{color:#ea580c;} .score-very-high{color:#dc2626;}
+.score-bar-low{stroke:#22c55e;} .score-bar-medium{stroke:#eab308;} .score-bar-high{stroke:#f97316;} .score-bar-very-high{stroke:#ef4444;}
+.score-breakdown{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
+.score-detail{background:#f9fafb;border-radius:10px;padding:10px 14px;}
+.score-detail-label{font-size:11px;color:#9ca3af;font-weight:600;margin-bottom:2px;}
+.score-detail-val{font-size:20px;font-weight:800;color:#111827;}
+.score-detail-sub{font-size:11px;color:#6b7280;}
+
+/* Overview / Final */
+.overview-header{background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:14px;padding:24px;color:#fff;}
+.overview-emr{font-size:22px;font-weight:900;margin-bottom:4px;}
+.overview-sub{font-size:13px;opacity:.8;}
+.overview-score-row{display:flex;align-items:center;gap:16px;margin-top:16px;}
+.overview-big-score{font-size:52px;font-weight:900;line-height:1;}
+.overview-score-detail{display:flex;flex-direction:column;gap:4px;}
+.overview-score-label{font-size:16px;font-weight:700;opacity:.9;}
+.overview-score-bar{height:8px;background:rgba(255,255,255,.3);border-radius:4px;width:200px;margin-top:4px;}
+.overview-score-fill{height:8px;border-radius:4px;background:#fff;}
+.overview-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.overview-card{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:16px;}
+.overview-card h4{font-size:12px;font-weight:700;text-transform:uppercase;color:#6b7280;margin-bottom:10px;}
+.overview-tag{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;margin:2px;}
+.ov-cap-Clients{background:#dcfce7;color:#166534;}
+.ov-cap-Appts{background:#dbeafe;color:#1e40af;}
+.ov-cap-Photos{background:#ede9fe;color:#5b21b6;}
+.ov-cap-Charts{background:#fce7f3;color:#9d174d;}
+.ov-cap-Files{background:#fef9c3;color:#854d0e;}
+.ov-cap-Other{background:#ffedd5;color:#9a3412;}
+.ov-gap{background:#fee2e2;color:#991b1b;}
+.ov-nuance{background:#f3f4f6;color:#374151;}
+.notes-display{font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;}
+.final-notes-card{background:#fff;border-radius:14px;border:2px dashed #e5e7eb;padding:20px;}
+.final-notes-card textarea{border:none;font-size:13px;line-height:1.6;background:transparent;padding:0;margin-top:4px;}
+.final-notes-card textarea:focus{border:none;outline:none;}
+
+/* Submit */
+.submit-loading{background:#eef2ff;border:1px solid #a5b4fc;border-radius:12px;padding:24px;text-align:center;font-size:14px;font-weight:600;color:#4338ca;}
+.submit-success{background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px;}
+.submit-error{background:#fef2f2;border:1px solid #fca5a5;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:10px;}
+a.notion-link{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:#fff;border:1px solid #86efac;border-radius:10px;font-size:13px;font-weight:700;color:#166534;text-decoration:none;}
+button.restart-btn{background:none;border:none;color:#4f46e5;font-size:12px;text-decoration:underline;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<div class="topbar" id="topbar">
+  <div class="topbar-title">
+    <h1>🩺 EMR Audit</h1>
+    <p>Provider Owner Discovery · Conducted by Amira</p>
+  </div>
+  <div class="badges" id="topbadges"></div>
+</div>
+
+<div class="progress-bar">
+  <div class="steps" id="steps-row"></div>
+  <div class="pbar"><div class="pbar-fill" id="pbar-fill" style="width:0%"></div></div>
+</div>
+
+<div class="main" id="main-content"></div>
+
+<script>
+// ─── DATA ──────────────────────────────────────────────────────────────────
+const EMR_DATA={
+  "Aesthetic Record":{confidence:"Somewhat Confident",confidenceColor:"yellow",standardCaps:["Clients","Appts","Files"],enterpriseCaps:["Clients","Appts","Photos","Charts","Files","Other"],exportMethod:"Request from EMR Support or self-export",emrRisk:8,nuances:["Notes must be migrated during Client Migration step","⚠️ Ambiguous appt status logic — manual review required","Exports booking history, not schedules — cancelled appts may duplicate"],cannotMigrate:["Clinical notes (standard tier)","Appointment IDs not linked to clients"]},
+  "Aesthetics Pro":{confidence:"Fully Confident",confidenceColor:"green",standardCaps:["Clients","Appts"],enterpriseCaps:["Clients","Appts","Photos","Charts","Files"],exportMethod:"Request from EMR Support or self-export",emrRisk:7,nuances:["Appointment data contains embedded client & notes data — manual extraction required","Account suspension risk during bulk extraction"],cannotMigrate:["Standalone notes (embedded in appts only)"]},
+  "BLVD":{confidence:"Fully Confident",confidenceColor:"green",standardCaps:["Clients","Appts"],enterpriseCaps:["Clients","Appts","Photos","Charts","Files","Other"],exportMethod:"Must request from EMR Support; client can self-export",emrRisk:1,nuances:["Photos may be attached to individual appts — confirm with client","Notes only exist in Client Profile"],cannotMigrate:["Appointment-linked photos (standard tier)","Automated report generation"]},
+  "Jane App":{confidence:"Fully Confident",confidenceColor:"green",standardCaps:["Clients","Appts","Photos","Files","Charts"],enterpriseCaps:["Clients","Appts","Photos","Charts","Files"],exportMethod:"Must request Photos & Charts export from Jane Support (free, one-time)",emrRisk:2,nuances:["Photos & Charts require a one-time batch export request to Jane Support","Notes cannot be migrated"],cannotMigrate:["Clinical/SOAP notes"]},
+  "Pabau":{confidence:"Not Yet Migrated",confidenceColor:"purple",standardCaps:["Clients","Appts","Other"],enterpriseCaps:[],exportMethod:"Client provides data via Pabau export guide",emrRisk:6,nuances:["⚠️ No prior migrations completed — expect unknowns","No internal script exists yet"],cannotMigrate:["Unknown — scope carefully"]},
+  "Portrait":{confidence:"Data Import ONLY",confidenceColor:"orange",standardCaps:["Clients","Appts"],enterpriseCaps:["Clients"],exportMethod:"ALL data must be pulled by the client — Moxie will NOT log into Portrait",emrRisk:7,nuances:["🚨 NOT a true migration — data import only","Moxie cannot access Portrait systems","Relational linking is limited without IDs"],cannotMigrate:["Direct system access","Photos/Charts/Files (standard)","Automated extraction"]},
+  "Remedly":{confidence:"Fully Confident",confidenceColor:"green",standardCaps:["Clients","Appts"],enterpriseCaps:["Clients","Appts","Photos","Charts","Files","Other"],exportMethod:"Must request from EMR Support — ⚠️ costs $1,500 for full data download",emrRisk:5,nuances:["💰 Full data download costs $1,500 — inform client upfront","Wallet items require manual effort","Files/Forms/Charts require custom script (not yet built)"],cannotMigrate:["Notes (limited)","Files/Charts/Forms without custom script"]},
+  "Tebra":{confidence:"Not Confident",confidenceColor:"red",standardCaps:["Clients","Appts","Files"],enterpriseCaps:["Clients","Appts","Charts","Files","Photos"],exportMethod:"Must request download from EMR Support; client can self-export",emrRisk:6,nuances:["⚠️ Known migration errors — flag for Migrations Lead review","Notes migration TBD — do not commit"],cannotMigrate:["Notes (TBD)","Error-free migration not guaranteed"]},
+  "TouchMD":{confidence:"Somewhat Confident",confidenceColor:"yellow",standardCaps:["Clients","Photos","Other"],enterpriseCaps:["Clients","Files","Other","Charts","Photos"],exportMethod:"Must request download from EMR Support or client self-exports",emrRisk:4,nuances:["Videos can be migrated (stored under 'Other')","No appointment migration capability"],cannotMigrate:["Appointments","Appointment history"]},
+  "Vagaro":{confidence:"Somewhat Confident",confidenceColor:"yellow",standardCaps:["Clients"],enterpriseCaps:["Clients","Photos","Charts","Other"],exportMethod:"Must request from EMR Support; client delivers export close to launch",emrRisk:3,nuances:["Notes must be exported separately from client data","Inconsistent sign-in/extraction experiences"],cannotMigrate:["Appointments (standard tier)","Consistent direct access"]}
+};
+
+const MUST_HAVE_ITEMS=[
+  {key:"clients",label:"Client profiles"},
+  {key:"customFields",label:"Custom intake fields"},
+  {key:"histAppts",label:"Historical appointments"},
+  {key:"futureAppts",label:"Future appointments"},
+  {key:"photos",label:"Before/after photos"},
+  {key:"charts",label:"Clinical notes / charts"},
+  {key:"files",label:"Consent forms / files"},
+  {key:"balances",label:"Outstanding balances"},
+  {key:"giftCards",label:"Gift cards"},
+  {key:"credits",label:"Account credits"},
+  {key:"memberships",label:"Memberships"},
+  {key:"retail",label:"Retail products"},
+  {key:"serviceMenu",label:"Service menu"}
+];
+const CAP_MAP={clients:"Clients",histAppts:"Appts",futureAppts:"Appts",photos:"Photos",charts:"Charts",files:"Files",retail:"Other"};
+const TIER_SCORES={Enterprise:10,Gold:8,Silver:5,Other:2};
+const SPECIAL_REQUESTS=[
+  {key:"customTransform",label:"Custom data transformations / unique mapping",pts:3},
+  {key:"photoScraping",label:"Photo/file migration requiring scraping",pts:3},
+  {key:"manualWork",label:"Significant manual work required",pts:2},
+  {key:"thirdParty",label:"Integration with third-party systems",pts:2},
+  {key:"expedited",label:"Expedited timeline or specific launch constraints",pts:2}
+];
+const CS={
+  green:{dot:"dot-green",label:"Fully Confident",bgcls:"badge-green"},
+  yellow:{dot:"dot-yellow",label:"Somewhat Confident",bgcls:"badge-yellow"},
+  red:{dot:"dot-red",label:"Not Confident",bgcls:"badge-red"},
+  orange:{dot:"dot-orange",label:"Data Import Only",bgcls:"badge-orange"},
+  purple:{dot:"dot-purple",label:"Not Yet Migrated",bgcls:"badge-purple"}
+};
+
+// Enterprise sections — NO service menu (s10 removed)
+const ENT_SECTIONS=[
+  {id:"s1",title:"1️⃣ System Overview & Access",risk:null,items:[
+    {id:"e1",label:"Source EMR(s) confirmed",note:true},
+    {id:"e2",label:"Multiple EMRs in use?",choices:["Yes — multiple locations","Yes — acquisition/legacy","No — single EMR"],note:true},
+    {id:"e3",label:"Cloud vs On-Prem",choices:["Cloud","On-Prem","Hybrid"],note:false},
+    {id:"e4",label:"API access available?",choices:["Yes","No","Unknown"],note:false},
+    {id:"e5",label:"Reporting access level",choices:["Full admin","Limited reporting","No reporting access"],note:false},
+    {id:"e6",label:"Login provided to dataguide@mydatahelper.co",choices:["Yes","No — pending","Not needed"],note:false},
+    {id:"e7",label:"Admin-level access confirmed",choices:["Yes","No — limited","TBD"],note:false},
+    {id:"e8",label:"IP restrictions or 2FA barriers?",choices:["Yes — flagged","No restrictions","Unknown"],note:true},
+  ]},
+  {id:"s2",title:"2️⃣ Client Data Structure",risk:null,items:[
+    {id:"e10",label:"Core fields confirmed (Name, DOB, Gender, Email, Phone, Address)",choices:["All present","Some missing","Unknown"],note:true},
+    {id:"e11",label:"Nicknames or middle names stored?",choices:["Yes — dedicated field","Yes — in name field","No"],note:false},
+    {id:"e12",label:"Multiple emails or phone types?",choices:["Yes — mobile + home","Yes — multiple emails","No — single contact"],note:false},
+    {id:"e13",label:"Tags or custom fields present?",choices:["Yes","No"],note:true},
+    {id:"e14",label:"Custom identifiers in use?",choices:["MRN","Internal ID","Membership ID","None"],multi:true,note:true},
+    {id:"e15",label:"Conditional logic forms present?",choices:["Yes","No"],note:true},
+    {id:"e16",label:"Any fields with compliance impact?",choices:["Yes — flagged","No","Unknown"],note:true},
+    {id:"e17",label:"Known duplicate volume",choices:["Minimal (<100)","Moderate (100–500)","High (500+)","Unknown"],note:true},
+    {id:"e18",label:"Client committed to cleanup before migration?",choices:["Yes — confirmed","Needs follow-up","No — risk flagged"],note:false},
+  ]},
+  {id:"s3",title:"3️⃣ Appointment Structure",risk:null,items:[
+    {id:"e22",label:"Appointment types in use",choices:["Standard only","Bundled services","Add-ons","Packages","Multi-provider","Split-day"],multi:true,note:true},
+    {id:"e23",label:"Appointment statuses present",choices:["Booked","Confirmed","Checked In","Completed","No Show","Cancelled"],multi:true,note:false},
+    {id:"e24",label:"No Show display decision",choices:["Migrate as-is","Mark cancelled","Don't migrate"],note:false},
+    {id:"e25",label:"Statuses affect reporting or revenue?",choices:["Yes — review needed","No","Unknown"],note:true},
+    {id:"e26",label:"Historical appointment depth",choices:["All history","Last 1 year","Last 2 years","Last 3 years","Client to confirm"],note:false},
+    {id:"e27",label:"Former / inactive providers exist?",choices:["Yes","No"],note:false},
+    {id:"e28",label:"Former provider decision",choices:["Create & deactivate","Reassign to owner provider","TBD"],note:false},
+  ]},
+  {id:"s4",title:"4️⃣ Wallet & Financial Data 🚨",risk:"critical",items:[
+    {id:"e32",label:"Outstanding balances report available?",choices:["Yes — full report","Yes — partial","No"],note:false},
+    {id:"e33",label:"Balances include partial payments?",choices:["Yes","No","Unknown"],note:false},
+    {id:"e34",label:"Gift cards — how stored?",choices:["Wallet credit","Unique codes","Stored value"],multi:true,note:true},
+    {id:"e35",label:"Gift card expiration logic?",choices:["Yes — expires","No expiration","Unknown"],note:true},
+    {id:"e36",label:"Account credit types present",choices:["Refund credits","Manual adjustments","Promo credits"],multi:true,note:false},
+    {id:"e37",label:"Credit expiration rules?",choices:["Yes — documented","No expiration","Unknown"],note:true},
+    {id:"e38",label:"Memberships active vs inactive documented?",choices:["Yes","No"],note:false},
+    {id:"e39",label:"Membership details confirmed",choices:["Billing frequency","Auto-pay","Rollover benefits","Freeze capability","Visit tracking","Tiers"],multi:true,note:true},
+    {id:"e40",label:"Frozen memberships in use?",choices:["Yes — documented","No","Unknown"],note:true},
+    {id:"e41",label:"⚠️ EMR auto-adjusts wallet on appt completion?",choices:["Yes — risk flagged","No","Unknown"],note:true},
+  ]},
+  {id:"s5",title:"5️⃣ Product & Retail",risk:null,items:[
+    {id:"e46",label:"Inventory tracking enabled?",choices:["Yes","No"],note:false},
+    {id:"e47",label:"Commission tracking in use?",choices:["Yes — automated","Yes — manual","No"],note:false},
+    {id:"e48",label:"Active product list and pricing obtained?",choices:["Yes","In progress","No"],note:false},
+    {id:"e49",label:"Retail sold as bundles with services?",choices:["Yes — stored separately","Yes — combined","No"],note:false},
+  ]},
+  {id:"s6",title:"6️⃣ Images, Files & Clinical Docs",risk:null,items:[
+    {id:"e52",label:"Before/after photos in use?",choices:["Yes","No"],note:false},
+    {id:"e53",label:"Photos linked to",choices:["Client","Appointment","Treatment type"],multi:true,note:true},
+    {id:"e54",label:"Photo export limitations",choices:["Standard export available","Scraping required","Client must pull","Unknown"],note:true},
+    {id:"e55",label:"SOAP / clinical notes in use?",choices:["Yes","No"],note:false},
+    {id:"e56",label:"Note features in use",choices:["Templates","Signature capture","Pinned notes / alerts","Locked records"],multi:true,note:false},
+    {id:"e57",label:"File types present",choices:["PDFs","Consent forms","Lab results","External docs"],multi:true,note:false},
+  ]},
+  {id:"s7",title:"7️⃣ Reporting & Extraction",risk:null,items:[
+    {id:"e59",label:"Reporting accurate in EMR?",choices:["Yes","No — known issues","Unknown"],note:true},
+    {id:"e60",label:"Available reports confirmed",choices:["Client export","Appointment export","Notes export","Wallet report","Membership report","Product report"],multi:true,note:false},
+    {id:"e61",label:"Export format",choices:["CSV","Excel","API","Manual pull only"],multi:true,note:false},
+    {id:"e62",label:"Report limitations identified",choices:["Record caps","Missing relational keys","Aggregated only","None identified"],multi:true,note:true},
+  ]},
+  {id:"s8",title:"8️⃣ Compliance & Risk",risk:null,items:[
+    {id:"e63",label:"EMR stores change history / audit trail?",choices:["Yes","No","Unknown"],note:false},
+    {id:"e64",label:"Migration impacts compliance logs?",choices:["Yes — review needed","No","Unknown"],note:true},
+    {id:"e65",label:"Data retention policy confirmed",choices:["Yes — documented","No policy","Unknown"],note:true},
+  ]},
+];
+const ENT_RISK_AREAS=["Clients","Appointments","Wallet","Memberships","Images","Custom Fields"];
+
+// ─── STATE ─────────────────────────────────────────────────────────────────
+let S={
+  step:0, selectedEMR:"", isEnterprise:null,
+  providerName:"", providerOwner:"", meetingDate:"",
+  mustHaves:{}, priority:{},
+  workflow:{},
+  clientCount:"", yearsOnEMR:"", practiceSize:"medium", moxieTier:"", specialRequests:{},
+  entChecked:{}, entNotes:{}, entChoices:{}, entRisk:{},
+  finalNotes:"",
+  submitState:"idle", notionUrl:"", submitError:""
+};
+
+function getSteps(){
+  // Standard: EMR → Workflow → Must-Haves → Score → Overview
+  // Enterprise: EMR → Must-Haves → Ent. Checklist → Score → Overview
+  return S.isEnterprise
+    ? ["EMR Selection","Must-Haves","Ent. Checklist","Score","Overview"]
+    : ["EMR Selection","Workflow","Must-Haves","Score","Overview"];
+}
+function getEMR(){return S.selectedEMR&&EMR_DATA[S.selectedEMR]?EMR_DATA[S.selectedEMR]:null;}
+function getCaps(){const e=getEMR();if(!e)return[];return S.isEnterprise?e.enterpriseCaps:e.standardCaps;}
+function canMigrate(key){const e=getEMR();if(!e)return null;const c=CAP_MAP[key];if(!c)return"manual";return getCaps().includes(c)?"yes":"no";}
+function hasGaps(){return MUST_HAVE_ITEMS.some(({key})=>S.mustHaves[key]&&canMigrate(key)==="no");}
+function entTotal(){return ENT_SECTIONS.reduce((s,sec)=>s+sec.items.length,0);}
+function entDone(){return Object.values(S.entChecked).filter(Boolean).length;}
+
+// Score out of 100
+function calcScore(){
+  const cc=parseInt(S.clientCount)||0, y=parseFloat(S.yearsOnEMR)||0;
+  if(!cc||!y)return null;
+  const emr=getEMR();if(!emr)return null;
+  const b=S.practiceSize==="small"?0.5:S.practiceSize==="medium"?1.0:2.0;
+  const t=Math.ceil(y/2);
+  // Raw components (0-100 scale)
+  const clientRaw=Math.min(100,Math.log10(Math.max(1,cc))*t*b*8); // up to ~100
+  const emrNorm=(emr.emrRisk/10)*100; // 0-100
+  const tierNorm=((TIER_SCORES[S.moxieTier]||2)/10)*100; // 0-100
+  const specPts=Math.min(30,SPECIAL_REQUESTS.filter(o=>S.specialRequests[o.key]).reduce((s,o)=>s+o.pts,0)*4); // bonus up to 30
+  // Weighted blend (40/40/20) then scale to 100, cap at 100
+  const base=(clientRaw*0.40)+(emrNorm*0.40)+(tierNorm*0.20);
+  const raw=Math.min(100,Math.round(base+specPts));
+  return{
+    score:raw,
+    clientPct:Math.round(clientRaw),
+    emrPct:Math.round(emrNorm),
+    tierPct:Math.round(tierNorm),
+    specPts:Math.round(specPts/4) // original pts value
+  };
+}
+function scoreLabel(s){
+  if(s===null)return null;
+  if(s<=25)return{label:"Low",cls:"score-low",barcls:"score-bar-low",ring:"#22c55e",desc:"Standard migration — normal resource allocation."};
+  if(s<=55)return{label:"Medium",cls:"score-medium",barcls:"score-bar-medium",ring:"#eab308",desc:"Moderate complexity — may need extra scoping; flag to Migrations Lead."};
+  if(s<=80)return{label:"High",cls:"score-high",barcls:"score-bar-high",ring:"#f97316",desc:"High complexity — senior support recommended; pad the timeline."};
+  return{label:"Very High",cls:"score-very-high",barcls:"score-bar-very-high",ring:"#ef4444",desc:"🚨 Very high complexity — requires Migrations Lead + potential engineering."};
+}
+
+// ─── RENDER ────────────────────────────────────────────────────────────────
+function render(){
+  renderTopBadges();renderProgressBar();
+  const main=document.getElementById("main-content");
+  const steps=getSteps();const step=steps[S.step];
+  if(step==="EMR Selection")main.innerHTML=renderEMRSelection();
+  else if(step==="Workflow")main.innerHTML=renderWorkflow();
+  else if(step==="Must-Haves")main.innerHTML=renderMustHaves();
+  else if(step==="Ent. Checklist")main.innerHTML=renderEntChecklist();
+  else if(step==="Score")main.innerHTML=renderScore();
+  else if(step==="Overview")main.innerHTML=renderOverview();
+}
+function renderTopBadges(){
+  const emr=getEMR();let html="";
+  const sr=calcScore();
+  if(sr){const sl=scoreLabel(sr.score);html+=`<span class="badge ${sl.cls==="score-low"?"badge-green":sl.cls==="score-medium"?"badge-yellow":sl.cls==="score-high"?"badge-orange":"badge-red"}" style="border-color:${sl.ring}">${sr.score}/100 · ${sl.label}</span>`;}
+  if(S.isEnterprise)html+=`<span class="badge badge-purple">⭐ Enterprise</span>`;
+  if(S.selectedEMR&&emr){const c=CS[emr.confidenceColor];html+=`<span class="badge ${c.bgcls}"><span class="dot ${c.dot}"></span>${S.selectedEMR}</span>`;}
+  document.getElementById("topbadges").innerHTML=html;
+}
+function renderProgressBar(){
+  const steps=getSteps(),max=steps.length-1;
+  document.getElementById("pbar-fill").style.width=`${(S.step/max)*100}%`;
+  let html="";
+  steps.forEach((s,i)=>{
+    const cls=i===S.step?"step-btn step-active":i<S.step?"step-btn step-done":"step-btn step-future";
+    html+=`<button class="${cls}" onclick="goStep(${i})" ${i>S.step?"disabled":""}>${i<S.step?"✓":i+1} ${s}</button>`;
+  });
+  document.getElementById("steps-row").innerHTML=html;
+}
+function goStep(i){if(i<=S.step){S.step=i;render();}}
+function nextStep(){S.step=Math.min(S.step+1,getSteps().length-1);render();}
+function prevStep(){S.step=Math.max(S.step-1,0);render();}
+
+// ── EMR SELECTION ──────────────────────────────────────────────────────────
+function renderEMRSelection(){
+  const emr=getEMR();
+  const emrBtns=Object.keys(EMR_DATA).map(name=>{
+    const d=EMR_DATA[name],c=CS[d.confidenceColor];
+    const sel=S.selectedEMR===name?`sel-${d.confidenceColor}`:"";
+    return `<button class="emr-btn ${sel}" onclick="selectEMR('${name}')"><span class="dot ${c.dot}"></span>${name}<span class="emr-risk">Risk ${d.emrRisk}/10</span></button>`;
+  }).join("")+`<button class="emr-btn ${S.selectedEMR==='Other'?'sel-gray':''}" onclick="selectEMR('Other')"><span class="dot" style="background:#9ca3af"></span>Other / Unknown</button>`;
+
+  const confBox=emr?`<div class="card ${emr.confidenceColor==='red'?'card-red':emr.confidenceColor==='yellow'?'card-yellow':''} badge-${emr.confidenceColor}" style="margin-top:0"><div style="font-size:13px;font-weight:700">${emr.confidence}</div><p style="font-size:12px;color:#374151;margin-top:4px">${emr.exportMethod}</p></div>`:"";
+
+  const tierSect=S.selectedEMR&&S.selectedEMR!=="Other"?`
+  <div class="card">
+    <div class="section-title">Account Tier</div>
+    <div class="tier-btns">
+      <button class="tier-btn ${S.isEnterprise===false?"active":""}" onclick="setTier(false)">Standard</button>
+      <button class="tier-btn ${S.isEnterprise===true?"active":""}" onclick="setTier(true)">⭐ Enterprise</button>
+    </div>
+    ${S.isEnterprise?`<p style="font-size:12px;color:#5b21b6;background:#ede9fe;border:1px solid #c4b5fd;border-radius:8px;padding:8px 12px;margin-top:10px">⭐ Enterprise — includes full Functionality Review Checklist (8 sections).</p>`:""}
+    ${S.isEnterprise===false?`<p style="font-size:12px;color:#374151;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px;margin-top:10px">Standard flow includes Workflow Review, Must-Haves, and Complexity Score.</p>`:""}
+  </div>`:"";
+
+  const canNext=S.selectedEMR&&(S.selectedEMR==="Other"||S.isEnterprise!==null);
+  return`
+    <div><h2 class="page-title">Meeting Details & EMR Identification</h2><p class="page-sub">Start by capturing provider info and identifying their EMR.</p></div>
+    <div class="card">
+      <div class="section-title">Meeting Details</div>
+      <div class="grid2">
+        <div><label class="field-label">Provider / Practice Name</label><input type="text" value="${esc(S.providerName)}" oninput="S.providerName=this.value" placeholder="e.g. Glow Med Spa"/></div>
+        <div><label class="field-label">Provider Owner Name</label><input type="text" value="${esc(S.providerOwner)}" oninput="S.providerOwner=this.value" placeholder="e.g. Dr. Smith"/></div>
+        <div><label class="field-label">Date of Meeting</label><input type="date" value="${esc(S.meetingDate)}" oninput="S.meetingDate=this.value"/></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-title">Which EMR are they using?</div>
+      <div class="emr-grid">${emrBtns}</div>
+      ${confBox}
+    </div>
+    ${tierSect}
+    <div class="btn-row end"><button class="btn-primary" onclick="nextStep()" ${canNext?"":"disabled"}>Next →</button></div>
+  `;
+}
+
+// ── WORKFLOW (Standard only) ───────────────────────────────────────────────
+function renderWorkflow(){
+  const wfSections=[
+    {s:"👥 Client Management",fields:[["How do you capture new clients?","clientCapture"],["Custom intake fields or conditional logic forms?","customForms"],["Duplicate profiles — known volume?","duplicates"]]},
+    {s:"📅 Scheduling & Appointments",fields:[["Who books/modifies appts?","bookingWho"],["Appt types: bundled, multi-provider, split-day, recurring?","apptTypes"],["How far back does appointment history go?","apptHistory"],["Former/inactive providers? Preference?","formerProviders"]]},
+    {s:"💰 Financials & Wallet",fields:[["Gift cards — how stored?","giftCardDetail"],["Active memberships details?","membershipDetail"],["Outstanding balances — report available?","balancesDetail"],["Commission tracking — automated?","commissions"]]},
+    {s:"🖼️ Images & Clinical Docs",fields:[["Photos — linked to client, appt, or treatment?","photoDetail"],["Clinical/SOAP notes in use?","notes"],["Consent forms or other file types?","consentForms"]]},
+    {s:"⚙️ Pain Points",fields:[["What frustrates them most about current EMR?","painPoints"],["What MUST stay identical post-migration?","mustStay"],["What are they okay changing?","okayChanging"]]}
+  ];
+  const cards=wfSections.map(({s,fields})=>{
+    const inputs=fields.map(([label,key])=>`<div style="margin-bottom:12px"><label class="field-label">${label}</label><textarea rows="2" oninput="S.workflow['${key}']=this.value">${esc(S.workflow[key]||"")}</textarea></div>`).join("");
+    return `<div class="card"><div class="section-title">${s}</div>${inputs}</div>`;
+  }).join("");
+  return`
+    <div><h2 class="page-title">Workflow Review</h2><p class="page-sub">Capture how they use their EMR day-to-day.</p></div>
+    ${cards}
+    <div class="btn-row"><button class="btn-back" onclick="prevStep()">← Back</button><button class="btn-primary" onclick="nextStep()">Next: Must-Haves →</button></div>
+  `;
+}
+
+// ── MUST-HAVES ─────────────────────────────────────────────────────────────
+function renderMustHaves(){
+  const emr=getEMR();
+  const rows=MUST_HAVE_ITEMS.map(({key,label})=>{
+    const ck=!!S.mustHaves[key];const st=canMigrate(key);
+    const canBadge=emr?(st==="yes"?`<span class="can-badge can-yes">✅ Yes</span>`:(st==="no"?`<span class="can-badge can-no">❌ No</span>`:`<span class="can-badge can-manual">⚠️ Manual</span>`)):"";
+    const prioBtns=ck?`<div class="priority-btns">
+      <button class="priority-btn ${S.priority[key]==='critical'?'ac':''}" onclick="setPri('${key}','critical')">🔴</button>
+      <button class="priority-btn ${S.priority[key]==='important'?'ai':''}" onclick="setPri('${key}','important')">🟡</button>
+      <button class="priority-btn ${S.priority[key]==='nice'?'an':''}" onclick="setPri('${key}','nice')">🟢</button>
+    </div>`:"";
+    return`<tr class="${ck?"ck-row":""}"><td><input type="checkbox" ${ck?"checked":""} onchange="toggleMH('${key}')" style="width:16px;height:16px;accent-color:#4f46e5;cursor:pointer"/></td><td style="font-weight:600">${label}</td><td>${prioBtns}</td>${emr?`<td>${canBadge}</td>`:""}</tr>`;
+  }).join("");
+  const gapAlert=hasGaps()?`<div class="gap-alert"><h4 style="font-size:13px;font-weight:700;color:#991b1b;margin-bottom:6px">🚨 Gap Alert</h4>${MUST_HAVE_ITEMS.filter(({key})=>S.mustHaves[key]&&canMigrate(key)==="no").map(({key,label})=>`<div class="gap-item">❌ ${label}${S.priority[key]==='critical'?`<span style="font-size:11px;background:#fca5a5;color:#991b1b;padding:2px 6px;border-radius:6px">CRITICAL</span>`:""}</div>`).join("")}</div>`:"";
+  const nextLabel=S.isEnterprise?"Next: Ent. Checklist →":"Next: Score →";
+  return`
+    <div><h2 class="page-title">Must-Have Requirements</h2><p class="page-sub">Check everything non-negotiable and set priority level.</p></div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="must-have-table">
+        <thead><tr><th style="width:30px"></th><th>Data Type</th><th>Priority</th>${emr?"<th>Can Migrate?</th>":""}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    ${gapAlert}
+    <div class="btn-row"><button class="btn-back" onclick="prevStep()">← Back</button><button class="btn-primary" onclick="nextStep()">${nextLabel}</button></div>
+  `;
+}
+
+// ── ENTERPRISE CHECKLIST ───────────────────────────────────────────────────
+function renderEntChecklist(){
+  const tot=entTotal(),done=entDone();
+  const secCards=ENT_SECTIONS.map(sec=>{
+    const secDone=sec.items.filter(i=>S.entChecked[i.id]).length;
+    const riskBadge=sec.risk==="critical"?`<span style="font-size:11px;font-weight:700;background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:999px">🚨 CRITICAL</span>`:"";
+    const items=sec.items.map(item=>{
+      const ck=!!S.entChecked[item.id];
+      const chosen=S.entChoices[item.id]||[];
+      const pills=item.choices?(item.choices.map(c=>{
+        const sel=chosen.includes(c);
+        return`<button class="pill ${sel?"selected":""}" onclick="togglePill('${item.id}','${esc(c)}',${!!item.multi})">${esc(c)}</button>`;
+      }).join("")+(item.multi?`<span class="multi-label">select all that apply</span>`:"")):"";
+      const noteInput=item.note!==false?`<div class="ent-note-wrap"><input class="ent-note" type="text" value="${esc(S.entNotes[item.id]||"")}" placeholder="Add note..." oninput="S.entNotes['${item.id}']=this.value"/></div>`:"";
+      return`<div class="ent-item ${ck?"checked":""}">
+        <div class="ent-item-top"><input type="checkbox" ${ck?"checked":""} onchange="toggleEnt('${item.id}')"/><span class="ent-item-label">${esc(item.label)}</span></div>
+        ${pills?`<div class="pills">${pills}</div>`:""}
+        ${noteInput}
+      </div>`;
+    }).join("");
+    return`<div class="ent-section ${sec.risk||""}">
+      <div class="ent-section-header"><span class="ent-section-title">${sec.title}</span>${riskBadge}<span class="ent-section-count">${secDone}/${sec.items.length}</span></div>
+      <div class="ent-items">${items}</div>
+    </div>`;
+  }).join("");
+  const riskRows=ENT_RISK_AREAS.map(area=>{
+    const r=S.entRisk[area]||{};
+    const cBtns=["Low","Med","High"].map(v=>`<button class="risk-btn ${r.complexity===v?v:''}" onclick="setEntRisk('${area}','complexity','${v}')">${v}</button>`).join("");
+    const rBtns=["Low","Med","High"].map(v=>`<button class="risk-btn ${r.risk===v?v:''}" onclick="setEntRisk('${area}','risk','${v}')">${v}</button>`).join("");
+    return`<tr><td style="font-weight:600">${area}</td><td><div class="risk-btns">${cBtns}</div></td><td><div class="risk-btns">${rBtns}</div></td></tr>`;
+  }).join("");
+  return`
+    <div style="display:flex;align-items:flex-start;justify-content:space-between">
+      <div><h2 class="page-title">⭐ Enterprise Checklist</h2><p class="page-sub">Tap pills for quick answers; add notes for detail.</p></div>
+      <div class="progress-mini"><div class="big-num">${done}<span style="font-size:13px;font-weight:400;color:#9ca3af">/${tot}</span></div><div style="font-size:11px;color:#9ca3af">checked</div><div class="mini-bar"><div class="mini-fill" style="width:${tot?(done/tot*100):0}%"></div></div></div>
+    </div>
+    ${secCards}
+    <div class="card">
+      <div class="section-title">🚦 Risk Scoring</div>
+      <table class="risk-table"><thead><tr><th>Area</th><th>Complexity</th><th>Risk</th></tr></thead><tbody>${riskRows}</tbody></table>
+    </div>
+    <div class="btn-row"><button class="btn-back" onclick="prevStep()">← Back</button><button class="btn-primary" onclick="nextStep()">Next: Score →</button></div>
+  `;
+}
+
+// ── SCORE ──────────────────────────────────────────────────────────────────
+function renderScore(){
+  const emr=getEMR();if(!emr)return"";
+  const caps=getCaps();
+  const sr=calcScore(),sl=sl2=scoreLabel(sr?.score??null);
+  const capBadges=caps.map(c=>`<span class="cap-badge cap-${c}">${c}</span>`).join("");
+  const nuanceList=emr.nuances.map(n=>`<li><span>•</span>${n}</li>`).join("");
+  const cantList=emr.cannotMigrate.map(n=>`<li><span style="color:#ef4444">•</span>${n}</li>`).join("");
+  const gapAlert=hasGaps()?`<div class="gap-alert"><h4 style="font-size:13px;font-weight:700;color:#991b1b;margin-bottom:6px">🚨 Gap Alert</h4>${MUST_HAVE_ITEMS.filter(({key})=>S.mustHaves[key]&&canMigrate(key)==="no").map(({key,label})=>`<div class="gap-item">❌ ${label}${S.priority[key]==='critical'?`<span style="font-size:11px;background:#fca5a5;color:#991b1b;padding:2px 6px;border-radius:6px;margin-left:6px">CRITICAL</span>`:""}</div>`).join("")}</div>`:"";
+  const practiceBtns=[["Small","small","0.5×"],["Medium","medium","1×"],["Large","large","2×"]].map(([l,v,m])=>`<button class="sm-btn ${S.practiceSize===v?"active":""}" onclick="S.practiceSize='${v}';render()">${l}<span class="sub">${m}</span></button>`).join("");
+  const tierBtns=[["Enterprise","10"],["Gold","8"],["Silver","5"],["Other","2"]].map(([t,p])=>`<button class="sm-btn ${S.moxieTier===t?"active":""}" onclick="S.moxieTier='${t}';render()">${t}<span class="sub">${p}pts</span></button>`).join("");
+  const specials=SPECIAL_REQUESTS.map(o=>`<div class="special-check ${S.specialRequests[o.key]?"checked":""}" onclick="toggleSR('${o.key}')"><input type="checkbox" ${S.specialRequests[o.key]?"checked":""} style="accent-color:#4f46e5;width:15px;height:15px"/><span style="font-size:13px;flex:1">${o.label}</span><span class="pts">+${o.pts}</span></div>`).join("");
+
+  // Ring SVG
+  let scoreRing="";
+  if(sr&&sl){
+    const pct=sr.score/100;
+    const r=66,circ=2*Math.PI*r;
+    const dash=pct*circ;
+    scoreRing=`<div class="score-ring-wrap">
+      <div class="score-ring">
+        <svg width="160" height="160" viewBox="0 0 160 160">
+          <circle cx="80" cy="80" r="${r}" fill="none" stroke="#f3f4f6" stroke-width="12"/>
+          <circle cx="80" cy="80" r="${r}" fill="none" stroke="${sl.ring}" stroke-width="12" stroke-dasharray="${dash} ${circ}" stroke-linecap="round"/>
+        </svg>
+        <div class="score-ring-center">
+          <div class="score-num ${sl.cls}">${sr.score}</div>
+          <div class="score-denom">/100</div>
+          <div class="score-lbl ${sl.cls}">${sl.label}</div>
+        </div>
+      </div>
+    </div>
+    <div class="score-breakdown">
+      <div class="score-detail"><div class="score-detail-label">Client Complexity</div><div class="score-detail-val">${sr.clientPct}</div><div class="score-detail-sub">40% weight</div></div>
+      <div class="score-detail"><div class="score-detail-label">EMR Risk</div><div class="score-detail-val">${sr.emrPct}</div><div class="score-detail-sub">40% weight · Risk ${emr.emrRisk}/10</div></div>
+      <div class="score-detail"><div class="score-detail-label">Moxie Tier</div><div class="score-detail-val">${sr.tierPct}</div><div class="score-detail-sub">20% weight</div></div>
+      <div class="score-detail"><div class="score-detail-label">Special Requests</div><div class="score-detail-val">+${sr.specPts * 4} bonus</div><div class="score-detail-sub">${sr.specPts} requests flagged</div></div>
+    </div>
+    <p style="font-size:13px;font-style:italic;color:#374151;margin-top:12px;text-align:center">${sl.desc}</p>`;
+  } else {
+    scoreRing=`<div style="border:1px dashed #e5e7eb;border-radius:10px;padding:20px;text-align:center;font-size:13px;color:#9ca3af">Enter client count and years on EMR to calculate score</div>`;
+  }
+
+  return`
+    <div><h2 class="page-title">Capabilities & Complexity Score</h2></div>
+    <div class="card badge-${emr.confidenceColor}" style="border-width:2px">
+      <div style="font-size:14px;font-weight:700">${emr.confidence} · EMR Risk ${emr.emrRisk}/10</div>
+      <p style="font-size:13px;margin-top:4px">Tier: <strong>${S.isEnterprise?"Enterprise":"Standard"}</strong></p>
+    </div>
+    <div class="card"><div class="section-title">✅ What We Can Migrate</div><div class="caps-list">${capBadges}</div></div>
+    <div class="card card-red"><div class="section-title" style="color:#991b1b">❌ Cannot Migrate</div><ul class="cannot-list">${cantList}</ul></div>
+    <div class="card card-yellow"><div class="section-title" style="color:#854d0e">⚠️ Known Nuances</div><ul class="nuances-list">${nuanceList}</ul></div>
+    ${gapAlert}
+    <div class="card card-purple">
+      <div style="font-size:15px;font-weight:800;margin-bottom:4px">🧮 Complexity Score Calculator</div>
+      <p style="font-size:11px;color:#6b7280;margin-bottom:16px">Score 0–100: (Client Score × 40%) + (EMR Risk × 40%) + (Tier × 20%) + bonuses</p>
+      <div class="grid2" style="margin-bottom:14px">
+        <div><label class="field-label">Total Clients in EMR <span style="color:#ef4444">*</span></label><input type="number" value="${esc(S.clientCount)}" oninput="S.clientCount=this.value;renderTopBadges()" placeholder="e.g. 2500"/></div>
+        <div><label class="field-label">Years on This EMR <span style="color:#ef4444">*</span></label><input type="number" value="${esc(S.yearsOnEMR)}" oninput="S.yearsOnEMR=this.value;renderTopBadges()" placeholder="e.g. 3"/></div>
+        <div><label class="field-label">Practice Size</label><div class="practice-btns">${practiceBtns}</div></div>
+        <div><label class="field-label">Moxie Tier</label><div class="tier-score-btns">${tierBtns}</div></div>
+      </div>
+      <label class="field-label" style="margin-bottom:8px">Special Requests</label>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">${specials}</div>
+      ${scoreRing}
+    </div>
+    <div class="btn-row"><button class="btn-back" onclick="prevStep()">← Back</button><button class="btn-primary" onclick="nextStep()">View Overview →</button></div>
+  `;
+}
+
+// ── OVERVIEW (final) ───────────────────────────────────────────────────────
+function renderOverview(){
+  const emr=getEMR();
+  const sr=calcScore(),sl=scoreLabel(sr?.score??null);
+  const caps=getCaps();
+  const c=emr?CS[emr.confidenceColor]:null;
+
+  const scoreVal=sr?sr.score:0;
+  const pct=scoreVal/100;
+  const r=66,circ=2*Math.PI*r,dash=pct*circ;
+
+  const capTags=caps.map(cap=>`<span class="overview-tag ov-cap-${cap}">${cap}</span>`).join("");
+  const cantTags=emr.cannotMigrate.map(n=>`<span class="overview-tag ov-gap">❌ ${n}</span>`).join("");
+  const gapTags=MUST_HAVE_ITEMS.filter(({key})=>S.mustHaves[key]&&canMigrate(key)==="no").map(({key,label})=>`<span class="overview-tag ov-gap">🚨 ${label}</span>`).join("");
+  const mustHaveTags=MUST_HAVE_ITEMS.filter(({key})=>S.mustHaves[key]).map(({key,label})=>{
+    const st=canMigrate(key);const p=S.priority[key];
+    const icon=st==="yes"?"✅":st==="no"?"❌":"⚠️";
+    const pri=p==="critical"?"🔴":p==="important"?"🟡":p==="nice"?"🟢":"";
+    return`<span class="overview-tag" style="background:#f9fafb;border:1px solid #e5e7eb;color:#374151">${icon}${pri} ${label}</span>`;
+  }).join("");
+  const nuanceTags=emr.nuances.map(n=>`<span class="overview-tag ov-nuance">• ${n}</span>`).join("");
+
+  let entSummaryCard="";
+  if(S.isEnterprise){
+    const hRisk=Object.values(S.entRisk).filter(r=>r?.risk==="High").length;
+    entSummaryCard=`<div class="card" style="border-color:#c4b5fd">
+      <div class="section-title">⭐ Enterprise Checklist</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="background:#ede9fe;border-radius:10px;padding:12px 16px;flex:1;min-width:120px;text-align:center"><div style="font-size:26px;font-weight:900;color:#5b21b6">${entDone()}<span style="font-size:14px;font-weight:400;color:#7c3aed">/${entTotal()}</span></div><div style="font-size:11px;color:#7c3aed">items checked</div></div>
+        <div style="background:#fee2e2;border-radius:10px;padding:12px 16px;flex:1;min-width:120px;text-align:center"><div style="font-size:26px;font-weight:900;color:#dc2626">${hRisk}</div><div style="font-size:11px;color:#dc2626">high-risk areas</div></div>
+      </div>
+    </div>`;
+  }
+
+  let wfCard="";
+  if(!S.isEnterprise){
+    const wfEntries=Object.entries(S.workflow).filter(([,v])=>v?.trim());
+    if(wfEntries.length){
+      const labels={clientCapture:"Client capture",customForms:"Custom forms",duplicates:"Duplicates",bookingWho:"Who books",apptTypes:"Appt types",apptHistory:"Appt history",formerProviders:"Former providers",giftCardDetail:"Gift cards",membershipDetail:"Memberships",balancesDetail:"Balances",commissions:"Commissions",photoDetail:"Photos",notes:"Clinical notes",consentForms:"Consent forms",painPoints:"Pain points",mustStay:"Must stay same",okayChanging:"OK to change"};
+      const rows=wfEntries.map(([k,v])=>`<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">${labels[k]||k}</div><div style="font-size:13px;color:#374151;margin-top:2px">${esc(v)}</div></div>`).join("");
+      wfCard=`<div class="card"><div class="section-title">📋 Workflow Notes</div>${rows}</div>`;
+    }
+  }
+
+  let submitSection=`<div class="card" style="background:#f9fafb;border:2px solid #e0e7ff">
+    <div class="section-title">📋 Copy Audit Summary</div>
+    <p style="font-size:12px;color:#6b7280;margin-bottom:14px">Copies the full audit as formatted text — paste into HubSpot, Notion, Slack, or anywhere else.</p>
+    <div class="btn-row">
+      <button class="btn-primary" id="copy-btn" onclick="copyAudit()" style="background:#4f46e5;display:flex;align-items:center;gap:8px">
+        <span>📋</span> Copy to Clipboard
+      </button>
+      <button class="btn-back" onclick="resetAll()">Start New Audit</button>
+    </div>
+    <div id="copy-confirm" style="display:none;margin-top:12px;background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;color:#166534">✅ Copied! Paste it into HubSpot, Notion, or wherever you need it.</div>
+  </div>`;
+
+  return`
+    <!-- Hero header -->
+    <div class="overview-header">
+      <div class="overview-emr">${S.providerName||"Provider"}</div>
+      <div class="overview-sub">${S.selectedEMR} · ${S.isEnterprise?"Enterprise":"Standard"} · ${S.meetingDate||"Today"}</div>
+      ${sr&&sl?`<div class="overview-score-row">
+        <div>
+          <svg width="100" height="100" viewBox="0 0 160 160" style="transform:rotate(-90deg)">
+            <circle cx="80" cy="80" r="${r}" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="14"/>
+            <circle cx="80" cy="80" r="${r}" fill="none" stroke="#fff" stroke-width="14" stroke-dasharray="${dash} ${circ}" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <div style="font-size:52px;font-weight:900;line-height:1">${sr.score}<span style="font-size:22px;opacity:.7">/100</span></div>
+          <div style="font-size:16px;font-weight:700;opacity:.9">${sl.label} Complexity</div>
+          <div style="font-size:12px;opacity:.7;margin-top:4px;max-width:280px">${sl.desc}</div>
+        </div>
+      </div>`:""}
+    </div>
+
+    <!-- EMR Quick Facts -->
+    ${emr?`<div class="overview-grid">
+      <div class="overview-card"><h4>✅ Can Migrate</h4>${capTags}</div>
+      <div class="overview-card"><h4>❌ Cannot Migrate</h4>${cantTags}</div>
+      <div class="overview-card"><h4>📋 Must-Haves Selected</h4>${mustHaveTags||'<span style="font-size:12px;color:#9ca3af">None selected</span>'}</div>
+      <div class="overview-card"><h4>⚠️ Known Nuances</h4>${nuanceTags}</div>
+    </div>`:""}
+
+    ${gapTags?`<div class="gap-alert"><h4 style="font-size:13px;font-weight:700;color:#991b1b;margin-bottom:6px">🚨 Migration Gaps</h4><div>${gapTags}</div></div>`:""}
+
+    ${entSummaryCard}
+    ${wfCard}
+
+    <!-- Confidence -->
+    ${emr&&c?`<div class="card badge-${emr.confidenceColor}" style="border-width:2px"><div style="font-size:13px;font-weight:700">${c.label} · ${emr.confidence}</div><p style="font-size:12px;color:#374151;margin-top:4px">${emr.exportMethod}</p></div>`:""}
+
+    <!-- Final notes -->
+    <div class="final-notes-card">
+      <div class="section-title">📝 Final Notes & Next Steps</div>
+      <textarea rows="5" placeholder="Summarize key takeaways, flag follow-up items, outline next steps..." oninput="S.finalNotes=this.value">${esc(S.finalNotes)}</textarea>
+    </div>
+
+    ${submitSection}
+    <div class="btn-row"><button class="btn-back" onclick="prevStep()">← Back to Score</button></div>
+  `;
+}
+
+// ─── HANDLERS ──────────────────────────────────────────────────────────────
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function selectEMR(name){S.selectedEMR=name;S.isEnterprise=null;render();}
+function setTier(v){S.isEnterprise=v;render();}
+function toggleMH(key){S.mustHaves[key]=!S.mustHaves[key];if(!S.mustHaves[key])delete S.priority[key];render();}
+function setPri(key,val){S.priority[key]=val;render();}
+function toggleEnt(id){S.entChecked[id]=!S.entChecked[id];render();}
+function togglePill(id,choice,isMulti){
+  const cur=S.entChoices[id]||[];
+  if(isMulti){S.entChoices[id]=cur.includes(choice)?cur.filter(c=>c!==choice):[...cur,choice];}
+  else{S.entChoices[id]=cur.includes(choice)?[]:[choice];}
+  if(!S.entChecked[id])S.entChecked[id]=true;
+  render();
+}
+function setEntRisk(area,field,val){S.entRisk[area]=S.entRisk[area]||{};S.entRisk[area][field]=val;render();}
+function toggleSR(key){S.specialRequests[key]=!S.specialRequests[key];render();}
+
+function buildMustHaveSummary(){
+  return MUST_HAVE_ITEMS.filter(({key})=>S.mustHaves[key]).map(({key,label})=>{
+    const p=S.priority[key],st=canMigrate(key);
+    return`${st==="yes"?"✅":st==="no"?"❌":"⚠️"} ${p==="critical"?"🔴":p==="important"?"🟡":p==="nice"?"🟢":""} ${label}`;
+  }).join("\n");
+}
+function buildWorkflowSummary(){
+  const lbl={clientCapture:"Client capture",customForms:"Custom forms",duplicates:"Duplicates",bookingWho:"Who books",apptTypes:"Appt types",apptHistory:"Appt history",formerProviders:"Former providers",giftCardDetail:"Gift cards",membershipDetail:"Memberships",balancesDetail:"Balances",commissions:"Commissions",photoDetail:"Photos",notes:"Clinical notes",consentForms:"Consent forms",painPoints:"Pain points",mustStay:"Must stay same",okayChanging:"OK to change"};
+  return Object.entries(S.workflow).filter(([,v])=>v?.trim()).map(([k,v])=>`${lbl[k]||k}: ${v}`).join("\n");
+}
+function buildEntSummary(){
+  const lines=[];const seen=new Set();
+  ENT_SECTIONS.forEach(sec=>{
+    sec.items.forEach(i=>{
+      const c=S.entChoices[i.id]||[],n=S.entNotes[i.id]||"";
+      if(S.entChecked[i.id]||c.length||n){
+        if(!seen.has(sec.id)){lines.push(`\n${sec.title}`);seen.add(sec.id);}
+        const parts=[S.entChecked[i.id]?"✅":"📝",i.label];
+        if(c.length)parts.push(`→ ${c.join(", ")}`);
+        if(n)parts.push(`(${n})`);
+        lines.push(`  ${parts.join(" ")}`);
+      }
+    });
+  });
+  const riskLines=ENT_RISK_AREAS.filter(a=>S.entRisk[a]).map(a=>`${a}: ${S.entRisk[a].complexity||"—"} complexity, Risk: ${S.entRisk[a].risk||"—"}`);
+  if(riskLines.length){lines.push("\nRisk Scores:");riskLines.forEach(l=>lines.push(`  ${l}`));}
+  return lines.join("\n");
+}
+
+function buildClipboardText(){
+  const emr=getEMR();
+  const sr=calcScore(),sl=scoreLabel(sr?.score??null);
+  const today=S.meetingDate||new Date().toISOString().split("T")[0];
+  const divider="─────────────────────────────────────";
+  const lines=[];
+
+  lines.push("🩺 EMR MIGRATION AUDIT");
+  lines.push(divider);
+  lines.push(`Provider:       ${S.providerName||"—"}`);
+  lines.push(`Owner:          ${S.providerOwner||"—"}`);
+  lines.push(`Date:           ${today}`);
+  lines.push(`EMR:            ${S.selectedEMR||"—"}`);
+  lines.push(`Tier:           ${S.isEnterprise?"Enterprise":"Standard"}`);
+  if(emr) lines.push(`Confidence:     ${emr.confidence}`);
+  lines.push("");
+
+  if(sr&&sl){
+    lines.push("📊 COMPLEXITY SCORE");
+    lines.push(divider);
+    lines.push(`Score:          ${sr.score}/100 — ${sl.label}`);
+    lines.push(`Client Score:   ${sr.clientPct}/100`);
+    lines.push(`EMR Risk:       ${sr.emrPct}/100  (EMR Risk ${emr?.emrRisk}/10)`);
+    lines.push(`Tier Score:     ${sr.tierPct}/100`);
+    if(sr.specPts>0) lines.push(`Special Req:    +${sr.specPts*4} bonus pts`);
+    lines.push(`Summary:        ${sl.desc}`);
+    lines.push("");
+  }
+
+  const mhSelected=MUST_HAVE_ITEMS.filter(({key})=>S.mustHaves[key]);
+  if(mhSelected.length){
+    lines.push("✅ MUST-HAVES");
+    lines.push(divider);
+    mhSelected.forEach(({key,label})=>{
+      const st=canMigrate(key);const p=S.priority[key];
+      const icon=st==="yes"?"✅":st==="no"?"❌":"⚠️";
+      const pri=p==="critical"?" 🔴 CRITICAL":p==="important"?" 🟡 Important":p==="nice"?" 🟢 Nice to have":"";
+      lines.push(`  ${icon} ${label}${pri}`);
+    });
+    lines.push("");
+  }
+
+  const gaps=MUST_HAVE_ITEMS.filter(({key})=>S.mustHaves[key]&&canMigrate(key)==="no");
+  if(gaps.length){
+    lines.push("🚨 MIGRATION GAPS");
+    lines.push(divider);
+    gaps.forEach(({key,label})=>{
+      lines.push(`  ❌ ${label}${S.priority[key]==='critical'?' — CRITICAL':''}`);
+    });
+    lines.push("");
+  }
+
+  if(emr){
+    lines.push("📦 CAPABILITIES");
+    lines.push(divider);
+    const caps=getCaps();
+    lines.push(`  Can migrate:    ${caps.join(", ")||"None"}`);
+    lines.push(`  Cannot migrate: ${emr.cannotMigrate.join(", ")}`);
+    lines.push("");
+    if(emr.nuances.length){
+      lines.push("⚠️ KNOWN NUANCES");
+      lines.push(divider);
+      emr.nuances.forEach(n=>lines.push(`  • ${n}`));
+      lines.push("");
+    }
+  }
+
+  if(!S.isEnterprise){
+    const wfEntries=Object.entries(S.workflow).filter(([,v])=>v?.trim());
+    if(wfEntries.length){
+      const lbl={clientCapture:"Client capture",customForms:"Custom forms",duplicates:"Duplicates",bookingWho:"Who books",apptTypes:"Appt types",apptHistory:"Appt history",formerProviders:"Former providers",giftCardDetail:"Gift cards",membershipDetail:"Memberships",balancesDetail:"Balances",commissions:"Commissions",photoDetail:"Photos",notes:"Clinical notes",consentForms:"Consent forms",painPoints:"Pain points",mustStay:"Must stay same",okayChanging:"OK to change"};
+      lines.push("📋 WORKFLOW NOTES");
+      lines.push(divider);
+      wfEntries.forEach(([k,v])=>lines.push(`  ${lbl[k]||k}: ${v}`));
+      lines.push("");
+    }
+  }
+
+  if(S.isEnterprise){
+    const entSum=buildEntSummary();
+    if(entSum.trim()){
+      lines.push(`⭐ ENTERPRISE CHECKLIST (${entDone()}/${entTotal()} items)`);
+      lines.push(divider);
+      lines.push(entSum);
+      lines.push("");
+    }
+    const hRisk=ENT_RISK_AREAS.filter(a=>S.entRisk[a]?.risk==="High");
+    if(hRisk.length){
+      lines.push("🚨 HIGH RISK AREAS");
+      lines.push(divider);
+      hRisk.forEach(a=>lines.push(`  • ${a}`));
+      lines.push("");
+    }
+  }
+
+  if(S.finalNotes?.trim()){
+    lines.push("📝 FINAL NOTES & NEXT STEPS");
+    lines.push(divider);
+    lines.push(S.finalNotes.trim());
+    lines.push("");
+  }
+
+  lines.push(divider);
+  lines.push(`Audited by Amira · ${today}`);
+  return lines.join("\n");
+}
+
+function copyAudit(){
+  const text=buildClipboardText();
+  navigator.clipboard.writeText(text).then(()=>{
+    const confirm=document.getElementById("copy-confirm");
+    const btn=document.getElementById("copy-btn");
+    if(confirm) confirm.style.display="block";
+    if(btn){ btn.innerHTML="✅ Copied!"; btn.style.background="#16a34a"; }
+    setTimeout(()=>{
+      if(confirm) confirm.style.display="none";
+      if(btn){ btn.innerHTML="<span>📋</span> Copy to Clipboard"; btn.style.background="#4f46e5"; }
+    },3000);
+  }).catch(()=>{
+    // Fallback for older browsers
+    const ta=document.createElement("textarea");
+    ta.value=text;ta.style.position="fixed";ta.style.opacity="0";
+    document.body.appendChild(ta);ta.select();document.execCommand("copy");
+    document.body.removeChild(ta);
+    const confirm=document.getElementById("copy-confirm");
+    if(confirm) confirm.style.display="block";
+    setTimeout(()=>{ if(confirm) confirm.style.display="none"; },3000);
+  });
+}
+
+function resetAll(){
+  S={step:0,selectedEMR:"",isEnterprise:null,providerName:"",providerOwner:"",meetingDate:"",mustHaves:{},priority:{},workflow:{},clientCount:"",yearsOnEMR:"",practiceSize:"medium",moxieTier:"",specialRequests:{},entChecked:{},entNotes:{},entChoices:{},entRisk:{},finalNotes:"",submitState:"idle",notionUrl:"",submitError:""};
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
